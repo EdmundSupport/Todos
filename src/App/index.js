@@ -10,30 +10,51 @@ import { AppUI } from "./AppUI";
 // ];
 
 function useLocalStorage(itemName, intialValue) {
-  const localStorageItem = localStorage.getItem(itemName);
+  const [error, setError] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
+  const [item, setItem] = React.useState(intialValue);
 
-  let parsedItem;
+  React.useEffect(() => {
+    setTimeout(() => {
+      try {
+        const localStorageItem = localStorage.getItem(itemName);
 
-  if (!localStorageItem) {
-    localStorage.setItem(itemName, JSON.stringify(intialValue));
-    parsedItem = [];
-  } else {
-    parsedItem = JSON.parse(localStorageItem);
-  }
+        let parsedItem;
 
-  const [item, setItem] = React.useState(parsedItem);
+        if (!localStorageItem) {
+          localStorage.setItem(itemName, JSON.stringify(intialValue));
+          parsedItem = [];
+        } else {
+          parsedItem = JSON.parse(localStorageItem);
+        }
+        setItem(parsedItem);
+        setLoading(false);
+      } catch (error) {
+        setError(error);
+      }
+    }, 1000);
+  });
 
   const saveItem = (newItem) => {
-    const stringifiedItem = JSON.stringify(newItem);
-    localStorage.setItem(itemName, stringifiedItem);
-    setItem(newItem);
+    try {
+      const stringifiedItem = JSON.stringify(newItem);
+      localStorage.setItem(itemName, stringifiedItem);
+      setItem(newItem);
+    } catch (error) {
+      setError(error);
+    }
   };
 
-  return [item, saveItem];
+  return { item, saveItem, loading, error };
 }
 
 function App(props) {
-  const [todos, saveTodos] = useLocalStorage("TODOS_V1", []);
+  const {
+    item: todos,
+    saveItem: saveTodos,
+    loading,
+    error,
+  } = useLocalStorage("TODOS_V1", []);
   const [param, setParam] = React.useState("");
   const completedTodos = todos.filter((todo) => todo.completed).length;
   const totalTodos = todos.length;
@@ -67,6 +88,8 @@ function App(props) {
 
   return (
     <AppUI
+      error={error}
+      loading={loading}
       totalTodos={totalTodos}
       completedTodos={completedTodos}
       param={param}
